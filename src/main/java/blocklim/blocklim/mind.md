@@ -16,12 +16,10 @@
     Rules{
         rule 1{
             BlockId: "minecraft:glass"
-            UnsafeDamage: 0
             Limit: 10         
         }
         rule 2{
             BlockId: "minecraft:wood"
-            UnsafeDamage: 2
             Limit: 10         
         }        
 

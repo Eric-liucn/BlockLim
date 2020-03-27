@@ -42,12 +42,10 @@ public class Config {
     }
 
     private static void addValue(){
-        rootNode.getNode("Rules","rule 1","BlockId").setValue("minecraft:chest");
-        rootNode.getNode("Rules","rule 1","UnsafeDamage").setValue(0);
-        rootNode.getNode("Rules","rule 1","Limit").setValue(10);
-        rootNode.getNode("Rules","rule 2","BlockId").setValue("minecraft:wool");
-        rootNode.getNode("Rules","rule 2","UnsafeDamage").setValue(2);
-        rootNode.getNode("Rules","rule 2","Limit").setValue(10);
+        rootNode.getNode("Rules","工业2机器限制","BlockId").setValue("ic2:te");
+        rootNode.getNode("Rules","工业2机器限制","Limit").setValue(30);
+        rootNode.getNode("Rules","rule2","BlockId").setValue("botania:specialflower[color=white,type=poppy]");
+        rootNode.getNode("Rules","rule2","Limit").setValue(10);
     }
 
 }

@@ -1,14 +1,18 @@
 package blocklim.blocklim;
 
+import blocklim.blocklim.command.Base;
 import blocklim.blocklim.config.Config;
 import blocklim.blocklim.config.RuleMap;
 import blocklim.blocklim.listener.BlockPlaceEvent;
 import com.google.inject.Inject;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.ForgeEventFactory;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.config.ConfigDir;
-import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.game.GameReloadEvent;
+import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.plugin.Plugin;
 
 import java.io.File;
@@ -51,8 +55,17 @@ public class Main {
             logger.info("配置文件加载失败！");
         }
 
-        System.out.println(RuleMap.getRuleMap());
+        RuleMap.reloadRuleMap();
 
-        Sponge.getEventManager().registerListeners(this,new BlockPlaceEvent());
+        Sponge.getCommandManager().register(this, Base.build(),"blocklim","bl");
+
+        MinecraftForge.EVENT_BUS.register(new BlockPlaceEvent());
+    }
+
+    @Listener
+    public void onReload(GameReloadEvent event) throws IOException {
+        Config.load();
+        Config.save();
+        RuleMap.reloadRuleMap();
     }
 }

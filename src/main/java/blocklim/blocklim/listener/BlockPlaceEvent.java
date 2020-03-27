@@ -1,65 +1,72 @@
 package blocklim.blocklim.listener;
 
-import blocklim.blocklim.Main;
-import com.flowpowered.math.vector.Vector3i;
-import jdk.nashorn.internal.ir.Block;
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.block.BlockSnapshot;
-import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.data.DataQuery;
-import org.spongepowered.api.data.Transaction;
-import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.block.ChangeBlockEvent;
-import org.spongepowered.api.world.Chunk;
-import org.spongepowered.api.world.World;
+import blocklim.blocklim.config.RuleMap;
+import com.google.common.eventbus.Subscribe;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraftforge.event.world.BlockEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
+import java.awt.*;
+import java.util.Map;
 
 
 public class BlockPlaceEvent {
 
-    @Listener
-    public void blockPlaceEvent(ChangeBlockEvent.Place event){
-        if (event.getSource() instanceof Player)
-        {
-            for (Transaction<BlockSnapshot> transaction:event.getTransactions()){
-                String blockId = getBlockNameFromTransaction(transaction);
-                World world = Sponge.getServer().getWorld(transaction.getFinal().getWorldUniqueId()).get();
-                Chunk chunk = world.getChunk(transaction.getFinal().getLocation().get().getChunkPosition()).get();
-                if (!((Player) event.getSource()).hasPermission("blocklimit.bypass")){
-                    int unsafeDamage = getUnsafeDamage(transaction.getFinal().getState());
-                    Main.getLogger().info(String.format("你放置了一个"+blockId+",他的unsafedamge是"+unsafeDamage));
-                }
+    private Map<String,Integer> ruleMap = RuleMap.getRuleMap();
+
+    @SubscribeEvent
+    public void forgeBlockPlaceEvent(BlockEvent.EntityPlaceEvent event){
+        if (event.getEntity() instanceof EntityPlayer){
+            EntityPlayer entityPlayer = (EntityPlayer) event.getEntity();
+            String nameAndMeta = getBlockNameAndMetaFromIBlockState(event.getPlacedBlock(),event.getWorld(),event.getPos(),entityPlayer);
+            int getCount = countBlockInThisChunk(event.getWorld(),event.getPos(),nameAndMeta);
+            ITextComponent iTextComponent =new TextComponentString("当前区块有"+getCount);
+            entityPlayer.sendMessage(iTextComponent);
+            if (ruleMap.containsKey(nameAndMeta)){
+                int limit = ruleMap.get(nameAndMeta);
             }
         }
     }
 
-    private static String getBlockNameFromTransaction(Transaction<BlockSnapshot> transaction){
-        return transaction.getFinal().getState().getType().getId();
+    private static String getBlockNameAndMetaFromIBlockState(IBlockState iBlockState, World world, BlockPos pos, EntityPlayer player){
+        ItemStack pickBlock;
+        if (player!=null) {
+            pickBlock = iBlockState.getBlock().getPickBlock(iBlockState, null, world, pos, player);
+        }else {
+            pickBlock = iBlockState.getBlock().getPickBlock(iBlockState, null, world, pos, null);
+        }
+        return pickBlock.getItem().getRegistryName() + ":" +pickBlock.getMetadata();
     }
 
-    private static int getCountOfBlock(String blockId,Chunk chunk){
-        int count = 0;
-        Vector3i max = chunk.getBlockMax();
-        Vector3i min = chunk.getBlockMin();
-        for (int x = min.getX(); x < max.getX() ; x++) {
-            for (int y = min.getY(); y < max.getY();y++){
-                for (int z = min.getZ(); z < max.getZ(); z++){
-                    BlockState blockState = chunk.getBlock(x,y,z);
-                    if (blockState.getType().getId().equals(blockId)){
-                        count+=1;
+    private static int countBlockInThisChunk(World world,BlockPos pos, String blockNameAndMeta){
+        Chunk chunk = world.getChunk(pos);
+        int count = 0 ;
+        int chunkX = chunk.getPos().x;
+        int chunkZ = chunk.getPos().z;
+        for (int x = 0; x < 16 ; x++) {
+            for (int z = 0; z < 16 ; z++) {
+                for (int y = 0; y < 255 ; y++) {
+                    IBlockState iBlockState = chunk.getBlockState(x,y,z);
+                    ItemStack pickBlock = iBlockState.getBlock().getPickBlock(iBlockState,null,world,new BlockPos(chunkX+x,y,chunkZ+z),null);
+                    String nameAndMeta = pickBlock.getItem().getRegistryName() + String.valueOf(pickBlock.getMetadata());
+                    if (nameAndMeta.equals(blockNameAndMeta)){
+                        count += 1;
                     }
-
                 }
+
             }
+
         }
         return count;
     }
 
-    private static int getUnsafeDamage(BlockState blockState){
-        if (blockState.toContainer().getInt(DataQuery.of("UnsafeData")).isPresent()){
-            return (int) blockState.toContainer().getInt(DataQuery.of("UnsafeData")).get();
-        }else{
-            return 0;
-        }
-    }
+
 }
