@@ -23,17 +23,23 @@ sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 dependencies {
-    compileOnly 'org.spongepowered:spongeapi:7.1.0'
-    annotationProcessor 'org.spongepowered:spongeapi:7.1.0'
+    compile 'org.spongepowered:spongeforge:1.12.2-2838-7.2.2:dev'
+    annotationProcessor 'org.spongepowered:spongeforge:1.12.2-2838-7.2.2:dev'
 }
 
 apply plugin: 'net.minecraftforge.gradle.forge'
 
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
 minecraft {
     // TODO: Configure Forge build here
-    forgeVersion = '1.12.2-14.23.5.2847'
+    forgeVersion = '1.12.2-14.23.5.2845'
     // TODO: Replace with your mappings version, e.g. stable_39 or snapshot_20180814
-    mappings = 'stable_39'
+    mappings = 'snapshot_20180814'
+
+    runDir = "run"
 }
 
 sponge.plugin.id = pluginId

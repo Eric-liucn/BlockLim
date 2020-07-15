@@ -1,22 +1,20 @@
 package blocklim.blocklim;
 
-import blocklim.blocklim.command.Base;
-import blocklim.blocklim.config.Config;
-import blocklim.blocklim.config.RuleMap;
-import blocklim.blocklim.listener.BlockPlaceEvent;
 import com.google.inject.Inject;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.ForgeEventFactory;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.command.CommandResult;
+import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.ConfigDir;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.GameReloadEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.util.blockray.BlockRay;
+import org.spongepowered.api.world.World;
 
 import java.io.File;
-import java.io.IOException;
 
 @Plugin(
         id = "blocklim",
@@ -30,42 +28,49 @@ public class Main {
 
     private static Main INSTANCE;
 
-    public static Main getINSTANCE() {
-        return INSTANCE;
-    }
-
     @Inject
     private Logger logger;
 
-    public static Logger getLogger() {
-        return INSTANCE.logger;
-    }
-
     @Inject
     @ConfigDir(sharedRoot = false)
-    File file;
+    private File file;
 
     @Listener
     public void onServerStart(GameStartedServerEvent event) {
         INSTANCE = this;
-        //加载配置文件
-        try {
-            Config.setUp(file);
-        }catch (IOException e){
-            logger.info("配置文件加载失败！");
-        }
 
-        RuleMap.reloadRuleMap();
 
-        Sponge.getCommandManager().register(this, Base.build(),"blocklim","bl");
+        CommandSpec spec = CommandSpec.builder()
+                .executor((src, args) -> {
+                    if (src instanceof Player){
+                        Player player = ((Player) src);
+                        BlockRay<World> blockRay = BlockRay.from(player).stopFilter(BlockRay.continueAfterFilter(BlockRay.onlyAirFilter(),1)).build();
+                        while (blockRay.hasNext()){
+                            BlockState blockState = blockRay.end().get().getLocation().getBlock();
+                            System.out.println(blockState);
+                            blockState.getTraits().forEach(blockTrait -> {
+                                System.out.println(blockTrait.getName());
+                            });
+                            System.out.println(blockState.getTraitValues());
+                        }
+                    }
+                    return CommandResult.success();
+                })
+                .build();
 
-        MinecraftForge.EVENT_BUS.register(new BlockPlaceEvent());
+        Sponge.getCommandManager().register(this, spec, "test");
     }
 
-    @Listener
-    public void onReload(GameReloadEvent event) throws IOException {
-        Config.load();
-        Config.save();
-        RuleMap.reloadRuleMap();
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public static Main getINSTANCE() {
+        return INSTANCE;
+
+    }
+
+    public File getFile() {
+        return file;
     }
 }
